@@ -1,11 +1,14 @@
-// Written by the deploy script. Tells the verify page which registry to trust.
 window.CERTCHAIN_CONFIG = {
   "institution": "Indian Institute of Management Shillong",
-  "network": "amoy",
-  "networkLabel": "Polygon Amoy test network",
-  "chainId": 80002,
+  "network": "hoodi",
+  "networkLabel": "Ethereum Hoodi test network",
+  "chainId": 560048,
   "testnet": true,
-  "rpcUrls": [],
-  "explorer": "https://amoy.polygonscan.com",
-  "contract": ""
+  "rpcUrls": [
+    "https://ethereum-hoodi-rpc.publicnode.com",
+    "https://0xrpc.io/hoodi",
+    "https://rpc.hoodi.ethpandaops.io"
+  ],
+  "explorer": "https://hoodi.etherscan.io",
+  "contract": "0x9595b5AB7df05d70649B3c625E1bf6A6b5bD4f62"
 };
