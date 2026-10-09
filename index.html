@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<!-- No third-party scripts, fonts, images or analytics. The only outbound
+     request this page can make is the blockchain read. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https: http://127.0.0.1:8545 http://localhost:8545; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="data:,">
+<title>Verify a certificate</title>
+<style>
+  :root {
+    --bg: #f5f3ee; --card: #ffffff; --ink: #161b27; --muted: #5a6170; --line: #e2ded4;
+    --accent: #1f3a5f;
+    --ok: #17663f; --ok-bg: #e6f2ea;
+    --bad: #a3261c; --bad-bg: #fbe9e6;
+    --warn: #8a5300; --warn-bg: #fdf0d8;
+    --wait: #3b4658; --wait-bg: #e9ecf1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151c; --card: #1a1f29; --ink: #eceef2; --muted: #a0a7b4; --line: #2c3340;
+      --accent: #9dbbe6;
+      --ok: #7fd3a4; --ok-bg: #16301f;
+      --bad: #f3a097; --bad-bg: #3a1a17;
+      --warn: #f0c274; --warn-bg: #3a2c12;
+      --wait: #c3cbd8; --wait-bg: #252c38;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px 56px; }
+  #testnet {
+    background: var(--warn-bg); color: var(--warn); font-size: 13.5px; font-weight: 600;
+    text-align: center; padding: 9px 16px; border-bottom: 1px solid var(--line);
+  }
+  header { padding: 34px 0 22px; }
+  .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  h1 { margin: 0; font: 600 27px/1.2 Georgia, "Times New Roman", serif; text-wrap: balance; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 22px; }
+  .card + .card { margin-top: 14px; }
+  .card > p:first-child { margin-top: 0; }
+  #drop {
+    border: 1.5px dashed var(--muted); border-radius: 8px; padding: 30px 16px; text-align: center;
+    cursor: pointer; transition: background .15s, border-color .15s;
+  }
+  #drop:hover, #drop.over, #drop:focus-visible { background: var(--wait-bg); border-color: var(--accent); outline: none; }
+  #drop strong { display: block; font-size: 17px; }
+  #drop span { color: var(--muted); font-size: 14px; }
+  .or { text-align: center; color: var(--muted); font-size: 13px; margin: 16px 0 12px; }
+  form { display: flex; gap: 8px; }
+  input[type=text] {
+    flex: 1; min-width: 0; padding: 11px 12px; font: inherit; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+  }
+  input[type=text]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .btn {
+    padding: 11px 18px; font: inherit; font-weight: 600; color: var(--card); background: var(--accent);
+    border: 0; border-radius: 7px; cursor: pointer;
+  }
+  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .btn.ghost { background: none; color: var(--accent); border: 1px solid var(--line); margin-top: 16px; }
+  #result > * + * { margin-top: 18px; }
+  .verdict { border-radius: 8px; padding: 18px 20px; border-left: 5px solid; }
+  .verdict-label { margin: 0; font: 600 23px/1.25 Georgia, "Times New Roman", serif; }
+  .verdict-lead { margin: 6px 0 0; color: var(--ink); }
+  .verdict.ok { background: var(--ok-bg); border-color: var(--ok); } .verdict.ok .verdict-label { color: var(--ok); }
+  .verdict.bad { background: var(--bad-bg); border-color: var(--bad); } .verdict.bad .verdict-label { color: var(--bad); }
+  .verdict.warn { background: var(--warn-bg); border-color: var(--warn); } .verdict.warn .verdict-label { color: var(--warn); }
+  .verdict.wait { background: var(--wait-bg); border-color: var(--wait); } .verdict.wait .verdict-label { color: var(--wait); }
+  dl { margin: 0; }
+  .details { display: grid; grid-template-columns: minmax(124px, 32%) 1fr; gap: 0; border-top: 1px solid var(--line); }
+  .details dt, .details dd { padding: 10px 0; border-bottom: 1px solid var(--line); margin: 0; }
+  .details dt { color: var(--muted); font-size: 14px; padding-right: 12px; }
+  .details dd { font-weight: 600; overflow-wrap: anywhere; }
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li { display: flex; gap: 10px; padding: 5px 0; }
+  .checks .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; margin-top: 2px; }
+  .checks .ok .mark { background: var(--ok-bg); color: var(--ok); }
+  .checks .bad .mark { background: var(--bad-bg); color: var(--bad); }
+  .note { color: var(--muted); font-size: 14.5px; margin-bottom: 0; }
+  .tech { border-top: 1px solid var(--line); padding-top: 14px; font-size: 13.5px; }
+  .tech summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+  .tech dt { color: var(--muted); margin-top: 10px; }
+  .tech dd { margin: 2px 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; overflow-wrap: anywhere; }
+  a { color: var(--accent); }
+  footer { margin-top: 26px; color: var(--muted); font-size: 13.5px; }
+  footer p { margin: 0 0 8px; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="testnet" hidden>Prototype on a test network. Not an official service or record.</div>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Certificate verification</p>
+    <h1 id="institution">Certificate verification</h1>
+  </header>
+
+  <main>
+    <section class="card" id="intro">
+      <p>Check whether a certificate is real, unaltered and still valid.</p>
+      <div id="drop" role="button" tabindex="0" aria-label="Choose a certificate file to verify">
+        <strong>Drop the certificate PDF here</strong>
+        <span>or tap to choose the file</span>
+      </div>
+      <input type="file" id="file" accept=".pdf,.json,application/pdf,application/json" hidden>
+      <p class="or">or paste the link from the certificate</p>
+      <form id="linkform">
+        <input type="text" id="link" aria-label="Verification link" placeholder="Verification link" autocomplete="off" spellcheck="false">
+        <button class="btn" type="submit">Verify</button>
+      </form>
+    </section>
+
+    <section class="card" id="result" hidden aria-live="polite"></section>
+    <button class="btn ghost" id="again" type="button" hidden>Verify another certificate</button>
+  </main>
+
+  <footer>
+    <p>The check runs in your browser. The certificate details are not uploaded or stored anywhere; only a fingerprint is looked up on the public blockchain.</p>
+    <p>Only trust results shown on the institution's own website address.</p>
+  </footer>
+</div>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
